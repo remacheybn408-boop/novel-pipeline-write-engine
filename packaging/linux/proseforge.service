@@ -1,0 +1,21 @@
+# ProseForge native web runtime - per-user systemd unit.
+# deb/rpm install this to /usr/lib/systemd/user/; for a tarball install copy it
+# to ~/.config/systemd/user/. Manage with:
+#   systemctl --user enable --now proseforge
+#   systemctl --user status proseforge
+# User data stays in ${XDG_DATA_HOME:-~/.local/share}/ProseForge and survives
+# package removal.
+[Unit]
+Description=ProseForge native web runtime
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/proseforge
+ExecStart=/opt/proseforge/proseforge web
+Restart=on-failure
+RestartSec=5
+Environment=PROSEFORGE_RUNTIME_PROFILE=native
+
+[Install]
+WantedBy=default.target

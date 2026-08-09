@@ -1,0 +1,4 @@
+interface:
+  display_name: "科幻小说"
+  short_description: "用于构建原创可推演设定技术代价人类抉择宏观变化与社会实验。"
+  default_prompt: "Use $science-fiction-writing to plan an original science-fiction story."

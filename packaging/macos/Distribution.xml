@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Distribution script for the ProseForge installer package.
+  The pkg-ref id/version must match the pkgbuild identifier/version flags used
+  by build-pkg.sh (version tracks the repo-root VERSION file).
+  enable_currentUserHome allows a per-user install so the LaunchAgent lands in
+  the user's own ~/Library/LaunchAgents instead of requiring /Library.
+-->
+<installer-gui-script minSpecVersion="1">
+    <title>ProseForge</title>
+    <options customize="never"/>
+    <domains enable_currentUserHome="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.proseforge.web"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.proseforge.web" visible="false">
+        <pkg-ref id="com.proseforge.web"/>
+    </choice>
+    <pkg-ref id="com.proseforge.web" version="1.5.0">proseforge-component.pkg</pkg-ref>
+</installer-gui-script>

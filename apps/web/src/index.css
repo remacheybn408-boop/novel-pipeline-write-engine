@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+  /* Near-monochrome palette matching the design reference */
+  --color-ink: #1a1a1a;
+  --color-ink-secondary: #8a8a8a;
+  --color-line: #ececec;
+  --color-hover: #f0f0f0;
+  --color-sidebar: #f7f7f8;
+  --color-disabled: #e5e5e5;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  background: #ffffff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Blinking cursor appended to streaming assistant text */
+.stream-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--color-ink);
+  animation: stream-blink 1s step-end infinite;
+}
+
+@keyframes stream-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Typing indicator dots */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-ink-secondary);
+  animation: typing-pulse 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Minimal markdown styling for assistant messages (no typography plugin) */
+.markdown > *:first-child {
+  margin-top: 0;
+}
+.markdown > *:last-child {
+  margin-bottom: 0;
+}
+.markdown p {
+  margin: 0.6em 0;
+  line-height: 1.8;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: 1em 0 0.5em;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.markdown h1 {
+  font-size: 1.3em;
+}
+.markdown h2 {
+  font-size: 1.18em;
+}
+.markdown h3 {
+  font-size: 1.08em;
+}
+.markdown ul,
+.markdown ol {
+  margin: 0.6em 0;
+  padding-left: 1.5em;
+  line-height: 1.8;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown code {
+  border-radius: 6px;
+  background: var(--color-hover);
+  padding: 0.15em 0.4em;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.markdown pre {
+  margin: 0.8em 0;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--color-sidebar);
+  border: 1px solid var(--color-line);
+  padding: 14px 16px;
+}
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  line-height: 1.7;
+}
+.markdown blockquote {
+  margin: 0.8em 0;
+  border-left: 3px solid var(--color-line);
+  padding-left: 1em;
+  color: var(--color-ink-secondary);
+}
+.markdown a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.markdown table {
+  margin: 0.8em 0;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--color-line);
+  padding: 6px 12px;
+}
+.markdown hr {
+  margin: 1.2em 0;
+  border: none;
+  border-top: 1px solid var(--color-line);
+}
+

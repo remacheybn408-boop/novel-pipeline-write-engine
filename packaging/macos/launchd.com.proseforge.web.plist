@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent template for the ProseForge web runtime (com.proseforge.web).
+  Shipped inside the pkg payload at /Library/LaunchAgents/.
+
+  launchd does NOT expand "~": the literal tilde paths below are rewritten to
+  the installing user's home directory by the package postinstall script
+  (see build-pkg.sh). No visible terminal: launchd owns the process and logs
+  go to ~/Library/Logs/ProseForge/. User data stays in
+  ~/Library/Application Support/ProseForge and survives uninstall.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.proseforge.web</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/proseforge/proseforge</string>
+        <string>web</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>~/Library/Application Support/ProseForge</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>~/Library/Logs/ProseForge/web.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>~/Library/Logs/ProseForge/web.stderr.log</string>
+</dict>
+</plist>

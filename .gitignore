@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Config with secrets
+config/license_server.json
+# Local runtime config (copied from config.example.json)
+config.json
+
+# Local privacy — NOT to be pushed to GitHub
+CLAUDE.md
+# database/ 存放权威 schema.sql + migrations（安装必需，必须随仓分发）。
+# 只忽略偶尔落到这里的本地 sqlite 文件。
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+workspace/
+artifacts/
+data/
+tmp/
+configs/scc_menu.json
+
+# Pipeline runtime output — local artifacts
+# Generated pipeline artifacts
+exports/
+
+# Story commit/memory artifacts — 现根锚在项目根（修复 parent.parent 误指 src/ 后）
+.story/
+
+# Local agent reviews
+reports/
+.env
+.env.*
+!.env.example
+data/
+backups/
+artifacts/
+apps/web/node_modules/
+apps/web/.pnpm-store/
+/.pnpm-store/
+apps/web/dist/
+playwright-report/
+test-results/
+.coverage
+htmlcov/
+.tools/
+.venv-native-*/
+.superpowers/
+.hf-cache/
+assets/
+
+# Bundled embedding model weights (packaging/models/fetch.py output) —
+# only the fetch scripts and README are tracked.
+packaging/models/models--*/
+packaging/models/gguf/
+packaging/models/llama-bin/
+packaging/models/*.lock
+packaging/models/status.json
+packaging/models/status.*.json

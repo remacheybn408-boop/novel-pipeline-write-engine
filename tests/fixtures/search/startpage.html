@@ -1,0 +1,11 @@
+<!-- Synthetic fixture built to match SearXNG's startpage engine: results
+     come from the embedded React payload
+     React.createElement(UIStartpage.AppSerpWeb, {...}}) — NOT from result
+     divs. NOT captured from the live site — must be calibrated against real
+     pages after deploy. -->
+<html><body>
+<div id="app"></div>
+<script>
+window.__APP__ = React.createElement(UIStartpage.AppSerpWeb, {"render": {"presenter": {"regions": {"mainline": [{"display_type": "web-google", "results": [{"clickUrl": "https://example.com/startpage-1", "title": "Startpage <b>Result</b> One", "description": "Startpage   snippet one"}, {"clickUrl": "https://example.org/startpage-2", "title": "Startpage Result Two", "description": "Startpage snippet two"}]}, {"display_type": "news-bing", "results": [{"clickUrl": "https://news.example/", "title": "News item, skipped", "description": "news"}]}]}}}})
+</script>
+</body></html>

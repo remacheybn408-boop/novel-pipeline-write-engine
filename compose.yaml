@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: proseforge
+      POSTGRES_USER: proseforge
+      POSTGRES_PASSWORD: proseforge
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proseforge -d proseforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    volumes:
+      - redis-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      args:
+        # CI passes --build-arg BUNDLE_EMBEDDINGS=0 to skip the ~700MB model fetch.
+        BUNDLE_EMBEDDINGS: ${BUNDLE_EMBEDDINGS:-1}
+    environment:
+      PROSEFORGE_ENVIRONMENT: ${PROSEFORGE_ENVIRONMENT:-development}
+      PROSEFORGE_DATABASE_URL: ${PROSEFORGE_DATABASE_URL:-postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge}
+      PROSEFORGE_SYNC_DATABASE_URL: ${PROSEFORGE_SYNC_DATABASE_URL:-postgresql+psycopg://proseforge:proseforge@postgres:5432/proseforge}
+      PROSEFORGE_REDIS_URL: ${PROSEFORGE_REDIS_URL:-redis://redis:6379/0}
+      PROSEFORGE_BLOB_ROOT: /data/blobs
+      PROSEFORGE_BACKUP_ROOT: /data/backups
+      PROSEFORGE_MASTER_KEY: ${PROSEFORGE_MASTER_KEY:-replace-with-32-byte-base64-key}
+      PROSEFORGE_JWT_SECRET: ${PROSEFORGE_JWT_SECRET:-replace-with-long-random-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - proseforge-blobs:/data/blobs
+      - proseforge-backups:/data/backups
+    command: ["uvicorn", "proseforge.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+      args:
+        # CI passes --build-arg BUNDLE_EMBEDDINGS=0 to skip the ~700MB model fetch.
+        BUNDLE_EMBEDDINGS: ${BUNDLE_EMBEDDINGS:-1}
+    environment:
+      PROSEFORGE_DATABASE_URL: ${PROSEFORGE_DATABASE_URL:-postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge}
+      PROSEFORGE_REDIS_URL: ${PROSEFORGE_REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - proseforge-blobs:/data/blobs
+      - proseforge-backups:/data/backups
+    command: ["celery", "-A", "proseforge.workflows.celery_app", "worker", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A proseforge.workflows.celery_app inspect ping --timeout=3 | grep -q pong"]
+      interval: 15s
+      timeout: 8s
+      retries: 4
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+      args:
+        # CI passes --build-arg BUNDLE_EMBEDDINGS=0 to skip the ~700MB model fetch.
+        BUNDLE_EMBEDDINGS: ${BUNDLE_EMBEDDINGS:-1}
+    environment:
+      PROSEFORGE_DATABASE_URL: ${PROSEFORGE_DATABASE_URL:-postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge}
+      PROSEFORGE_REDIS_URL: ${PROSEFORGE_REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "proseforge.workflows.celery_app", "beat", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from proseforge.workflows.celery_app import celery; assert celery.main == 'proseforge'\""]
+      interval: 15s
+      timeout: 8s
+      retries: 4
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  postgres-data:
+  proseforge-blobs:
+  proseforge-backups:
+  redis-data:

@@ -1,0 +1,4 @@
+interface:
+  display_name: "爱情小说"
+  short_description: "构建原创爱情故事的情感张力人物关系推进与独立成长。"
+  default_prompt: "Use $romance-fiction-writing to design an original romance storyline."

@@ -1,0 +1,33 @@
+.git
+.gitignore
+.claude
+.codex
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+workspace
+data
+artifacts
+dist
+build
+.pnpm-store
+apps/web/node_modules
+apps/web/dist
+*.egg-info
+# Server-side runtime/deploy artifacts (top-level checkout doubles as the
+# demo build context; these must never be COPYed into images)
+app/
+app.bak*/
+embeddings/
+venv/
+sandbox-venv/
+exports/
+backups/
+tmp/
+*.tar.gz
+# Baked into images by the Docker build-time fetch instead (docker/*.Dockerfile)
+packaging/models/gguf/
+packaging/models/llama-bin/
+Daily Work Tasks/
+story-workspace/

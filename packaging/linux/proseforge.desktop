@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=ProseForge
+Comment=Start the ProseForge native web runtime (http://127.0.0.1:8000)
+Type=Application
+Exec=/opt/proseforge/proseforge web
+Terminal=true
+Categories=Office;

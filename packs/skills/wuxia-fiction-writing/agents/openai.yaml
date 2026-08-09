@@ -1,0 +1,4 @@
+interface:
+  display_name: "武侠小说"
+  short_description: "用于构建原创江湖关系武学冲突侠义抉择门派恩怨与人物命运。"
+  default_prompt: "Use $wuxia-fiction-writing to write an original wuxia chapter outline."

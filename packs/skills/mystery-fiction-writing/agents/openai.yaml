@@ -1,0 +1,4 @@
+interface:
+  display_name: "悬疑小说"
+  short_description: "用于构建原创公平线索谜案结构心理悬念逻辑闭合与反转节奏。"
+  default_prompt: "Use $mystery-fiction-writing to design an original mystery case."

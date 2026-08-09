@@ -1,0 +1,20 @@
+<!-- Synthetic fixture built to match SearXNG's yahoo engine selectors
+     (div[class*=algo-sr] > div.compTitle h3 a[aria-label]; div.compText
+     snippet; r.search.yahoo.com /RU=.../RK/RS unwrap). NOT captured from
+     the live site — must be calibrated against real pages after deploy. -->
+<html><body>
+<ol>
+  <li>
+    <div class="dd algo algo-sr">
+      <div class="compTitle"><h3><a aria-label="Yahoo Result One" href="https://r.search.yahoo.com/_ylt=abc/RU=https%3a%2f%2fexample.com%2fyahoo-1/RK=2/RS=xyz123">Yahoo Result One</a></h3></div>
+      <div class="compText">Yahoo   snippet one</div>
+    </div>
+  </li>
+  <li>
+    <div class="dd algo algo-sr">
+      <div class="compTitle"><h3><a aria-label="Yahoo Result Two" href="https://example.org/yahoo-2">Yahoo Result Two</a></h3></div>
+      <div class="compText">Yahoo snippet two</div>
+    </div>
+  </li>
+</ol>
+</body></html>

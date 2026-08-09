@@ -1,0 +1,25 @@
+<!-- Synthetic fixture: hand-built to mirror html.duckduckgo.com result markup
+     (div.result > a.result__a + .result__snippet). NOT captured from the live
+     site — selectors must be revalidated against real pages after deploy. -->
+<html><body>
+<div class="links_main">
+  <div class="result results_links results_links_deep web-result">
+    <h2 class="result__title">
+      <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fnews-1&rut=abc">Example News One</a>
+    </h2>
+    <a class="result__snippet">First   snippet
+      with odd spacing</a>
+  </div>
+  <div class="result results_links results_links_deep web-result">
+    <h2 class="result__title">
+      <a class="result__a" href="https://direct.example.org/page">Direct Link Two</a>
+    </h2>
+    <a class="result__snippet">Second snippet</a>
+  </div>
+  <div class="result result--ad">
+    <h2 class="result__title">
+      <a class="result__a" href="">Ad with empty href</a>
+    </h2>
+  </div>
+</div>
+</body></html>

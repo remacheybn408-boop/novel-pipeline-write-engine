@@ -1,0 +1,19 @@
+<!-- Synthetic fixture built to match SearXNG's brave engine selectors
+     (div.snippet container; first absolute a href; div[class*=title];
+     div with the exact 'content' class token). NOT captured from the live
+     site — must be calibrated against real pages after deploy. -->
+<html><body>
+<div id="results">
+  <div class="snippet ">
+    <a href="https://example.com/brave-1"><div class="title">Brave Result One</div></a>
+    <div class="content">Brave   snippet one</div>
+  </div>
+  <div class="snippet ">
+    <a href="https://example.org/brave-2"><div class="title">Brave Result Two</div></a>
+    <div class="content">Brave snippet two</div>
+  </div>
+  <div class="snippet ">
+    <a href="/ads/click"><div class="title">Ad with relative href, skipped</div></a>
+  </div>
+</div>
+</body></html>

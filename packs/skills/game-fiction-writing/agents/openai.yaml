@@ -1,0 +1,4 @@
+interface:
+  display_name: "游戏小说"
+  short_description: "用于构建原创游戏机制团队协作赛事冒险角色成长与目标推进。"
+  default_prompt: "Use $game-fiction-writing to outline an original game-fiction arc."

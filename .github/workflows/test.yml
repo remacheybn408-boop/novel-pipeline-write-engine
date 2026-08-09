@@ -1,0 +1,305 @@
+# ProseForge CI — 三平台矩阵（Linux / macOS / Windows）
+# 每个 OS 跑自己能跑的所有测试；
+# Docker / E2E / 安全扫描 只在 Linux 跑（资源密集型）。
+name: Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.13.0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ===========================================================================
+  # 全平台测试矩阵 — 每个 OS 跑 Python 测试 + Web 前端测试
+  # ===========================================================================
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Python 环境 ----
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project with dev dependencies
+        run: |
+          pip install -U pip setuptools wheel
+          pip install -e ".[dev,api]"
+
+      - name: Run Python unit & architecture tests (no external deps)
+        run: |
+          pytest tests/unit tests/architecture tests/security tests/tasks tests/operations tests/agents tests/packaging tests/runtime tests/cli tests/docker tests/database tests/fault_injection -q --junitxml=junit-unit-${{ runner.os }}.xml
+
+      - name: Run Python root-level tests
+        # 通配符 tests/test_*.py 依赖 shell 展开；Windows 默认 pwsh 不展开
+        # glob，必须显式用 bash（runner 自带 Git Bash）。
+        shell: bash
+        run: |
+          pytest tests/test_*.py -q --junitxml=junit-root-${{ runner.os }}.xml -k "not postgres and not e2e"
+
+      # ---- Web 前端环境 ----
+      - name: Install Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@${{ env.PNPM_VERSION }} --activate
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: echo "STORE=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('apps/web/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/web
+
+      - name: TypeScript typecheck
+        run: pnpm typecheck
+        working-directory: apps/web
+
+      - name: Frontend unit tests (vitest)
+        run: pnpm test
+        working-directory: apps/web
+
+      - name: Frontend build
+        run: pnpm build
+        working-directory: apps/web
+
+      # ---- 报告 ----
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ runner.os }}
+          path: junit-*.xml
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # Lint — Linux (Ruff via Docker)
+  # ===========================================================================
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Ruff lint
+        # 只跑 ruff check：项目代码风格允许紧凑单行（E701/E702 已在
+        # pyproject 放行），ruff format 会重排 342 个文件，不纳入 CI。
+        run: docker compose -f compose.yaml -f compose.test.yaml run --rm api-test ruff check proseforge tests
+
+      - name: Check formatting boundaries
+        run: git diff --check
+
+  # ===========================================================================
+  # PostgreSQL 集成测试 — Linux only
+  # ===========================================================================
+  pg-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: proseforge
+          POSTGRES_USER: proseforge
+          POSTGRES_PASSWORD: proseforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U proseforge -d proseforge"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project with full extras
+        run: |
+          pip install -U pip setuptools wheel
+          pip install -e ".[dev,api]"
+
+      - name: Run DB & API integration tests (needs PG + Redis)
+        env:
+          PROSEFORGE_TEST_DATABASE_URL: postgresql+asyncpg://proseforge:proseforge@localhost:5432/proseforge
+          PROSEFORGE_TEST_REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest tests/database/test_postgres_compatibility.py tests/integration/database tests/api tests/contract -q --junitxml=junit-pg.xml
+
+      - name: Upload PG test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-pg
+          path: junit-pg.xml
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # Docker Compose 全量测试 — Linux only
+  # ===========================================================================
+  docker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Compose topology
+        run: docker compose -f compose.yaml -f compose.test.yaml config --quiet
+
+      - name: Build Docker test images
+        run: docker compose -f compose.yaml -f compose.test.yaml build api-test contract-test migration-test recovery-test web-test
+
+      - name: Run API and contract suites
+        run: |
+          docker compose -f compose.yaml -f compose.test.yaml run --rm api-test
+          docker compose -f compose.yaml -f compose.test.yaml run --rm contract-test
+
+      - name: Run migration and recovery suites
+        run: |
+          docker compose -f compose.yaml -f compose.test.yaml run --rm migration-test
+          docker compose -f compose.yaml -f compose.test.yaml run --rm recovery-test
+
+      - name: Run frontend tests in Docker
+        run: docker compose -f compose.yaml -f compose.test.yaml run --rm web-test
+
+      - name: Build production images
+        run: docker compose -f compose.yaml build --build-arg BUNDLE_EMBEDDINGS=0 api worker scheduler web
+
+      - name: Upload Docker test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proseforge-docker-reports
+          path: artifacts/
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # 安全扫描 — Linux only
+  # ===========================================================================
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Trivy filesystem scan
+        run: |
+          mkdir -p artifacts
+          docker run --rm -v "$PWD:/src" aquasec/trivy:0.69.3@sha256:7228e304ae0f610a1fad937baa463598cadac0c2ac4027cc68f3a8b997115689 \
+            fs --format sarif -o /src/artifacts/trivy-fs.sarif --severity HIGH,CRITICAL --ignore-unfixed /src
+
+      - name: Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: artifacts/proseforge-sbom.cdx.json
+
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proseforge-security-reports
+          path: artifacts/
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # 依赖审计 — Linux only
+  # ===========================================================================
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Audit Python deps
+        run: |
+          docker compose -f compose.yaml -f compose.test.yaml run --rm api-test sh -lc "python -m pip install --no-cache-dir pip-audit && pip-audit"
+
+      - name: Audit frontend deps
+        run: |
+          docker compose -f compose.yaml -f compose.test.yaml run --rm web-test sh -lc "corepack enable && pnpm audit --audit-level high"
+
+  # ===========================================================================
+  # 汇总看板
+  # ===========================================================================
+  status:
+    if: always()
+    needs:
+      - test
+      - lint
+      - pg-integration
+      - docker-tests
+      - security-scan
+      - dependency-audit
+    runs-on: ubuntu-latest
+    steps:
+      # 逐个显式引用 needs 结果：表达式里不能用 bash 变量做索引，
+      # 带连字符的 job 名必须用字符串下标（needs['x-y'].result）。
+      - run: |
+          {
+            echo "## ✅ ProseForge CI 汇总"
+            echo ""
+            echo "| Job | Status |"
+            echo "|-----|--------|"
+            echo "| test | ${{ needs.test.result }} |"
+            echo "| lint | ${{ needs.lint.result }} |"
+            echo "| pg-integration | ${{ needs['pg-integration'].result }} |"
+            echo "| docker-tests | ${{ needs['docker-tests'].result }} |"
+            echo "| security-scan | ${{ needs['security-scan'].result }} |"
+            echo "| dependency-audit | ${{ needs['dependency-audit'].result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

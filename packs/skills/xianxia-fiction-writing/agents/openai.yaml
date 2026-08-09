@@ -1,0 +1,4 @@
+interface:
+  display_name: "修仙小说"
+  short_description: "用于构建原创修仙小说世界体系升级规则因果代价与人物成长。"
+  default_prompt: "Use $xianxia-fiction-writing to outline an original cultivation-fiction arc."

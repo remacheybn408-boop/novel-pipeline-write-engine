@@ -1,0 +1,4 @@
+repository=remacheybn408-boop/ProseForge
+branch=master
+revision=bbf2cf82c0b246a5be3be7576b977586bfbcfb58
+worktree_branch=master

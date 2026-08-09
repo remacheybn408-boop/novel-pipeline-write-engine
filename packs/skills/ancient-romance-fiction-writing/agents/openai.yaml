@@ -1,0 +1,4 @@
+interface:
+  display_name: "古风小说"
+  short_description: "用于构建原创古风小说情感礼制命运叙事时代质感与人物成长。"
+  default_prompt: "Use $ancient-romance-fiction-writing to draft an original ancient-style romance scene."

@@ -1,0 +1,112 @@
+services:
+  api:
+    environment:
+      PROSEFORGE_PUBLIC_URL: http://web
+      # 产品只允许一个账号（/api/v1/auth/setup 一次性），整套并行 e2e 共享同一
+      # 用户的限流桶：全套件 /api/v3 写 ~25 次/分钟、轮询读峰值 >60 次/分钟，
+      # 超过默认 20/60。这里只放宽 e2e 堆栈的桶大小；中间件本身由
+      # tests/api/test_agent_security.py 以默认值做 429 断言，不受影响。
+      PROSEFORGE_AGENT_RATE_LIMIT_WRITE_PER_MINUTE: "60"
+      PROSEFORGE_AGENT_RATE_LIMIT_READ_PER_MINUTE: "240"
+
+  postgres:
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+
+  redis:
+    volumes:
+      - redis-test-data:/data
+
+  provider-mock:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["python", "tests/e2e/mock_provider.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/v1/models')"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api-test:
+    build:
+      context: .
+      dockerfile: docker/test.Dockerfile
+    command: ["pytest", "-q", "--junitxml=/artifacts/api-pytest.xml"]
+    # Inherited from the removed legacy-test service (repo mount + artifacts).
+    volumes:
+      - .:/app
+      - ./artifacts:/artifacts
+    tmpfs:
+      - /app/exports
+    environment:
+      PROSEFORGE_DATABASE_URL: postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge
+      PROSEFORGE_SYNC_DATABASE_URL: postgresql+psycopg://proseforge:proseforge@postgres:5432/proseforge
+      PROSEFORGE_TEST_DATABASE_URL: postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge
+      PROSEFORGE_TEST_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  contract-test:
+    extends:
+      service: api-test
+    command: ["pytest", "-q", "tests/contract", "--junitxml=/artifacts/contract-pytest.xml"]
+
+  migration-test:
+    extends:
+      service: api-test
+    command: ["pytest", "-q", "tests/migration", "tests/integration/database", "--junitxml=/artifacts/migration-pytest.xml"]
+    environment:
+      PROSEFORGE_DATABASE_URL: postgresql+asyncpg://proseforge:proseforge@postgres:5432/proseforge
+      PROSEFORGE_SYNC_DATABASE_URL: postgresql+psycopg://proseforge:proseforge@postgres:5432/proseforge
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  recovery-test:
+    extends:
+      service: api-test
+    command: ["pytest", "-q", "tests/recovery", "--junitxml=/artifacts/recovery-pytest.xml"]
+
+  web-test:
+    image: node:22-alpine
+    working_dir: /app/apps/web
+    volumes:
+      - .:/app
+      - web-node-modules:/app/apps/web/node_modules
+      - web-pnpm-store:/pnpm-store
+    command: ["sh", "-lc", "corepack enable && pnpm install --frozen-lockfile --store-dir /pnpm-store && pnpm typecheck && pnpm test && pnpm build"]
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    working_dir: /app/tests/e2e
+    volumes:
+      - .:/app
+    environment:
+      BASE_URL: http://web
+    # Playwright 镜像自带与镜像 tag 同版本的 @playwright/test 和浏览器，
+    # npx 全局缺失时回退下载固定版本；specs 与 config 都在 tests/e2e 下。
+    command: ["bash", "-lc", "npx --yes playwright@1.61.1 test --config playwright.config.ts"]
+    # test-results 写到容器内 /tmp（见 playwright.config.ts outputDir），
+    # 避免写挂载的 Windows 目录触发 EACCES
+    tmpfs:
+      - /tmp/playwright-results
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+      provider-mock:
+        condition: service_healthy
+
+volumes:
+  web-node-modules:
+  web-pnpm-store:
+  postgres-test-data:
+  redis-test-data:

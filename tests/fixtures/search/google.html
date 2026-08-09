@@ -1,0 +1,25 @@
+<!-- Synthetic fixture built to match SearXNG's google engine selectors
+     (a[data-ved] without class > div[style] title; div.ilUpNd snippet under
+     the anchor's grandparent; /url?q= redirector unwrap). NOT captured from
+     the live site — must be calibrated against real pages after deploy. -->
+<html><body>
+<div id="search">
+  <div class="MjjYud">
+    <div>
+      <a data-ved="2ahUKEwjabc" href="/url?q=https%3A//example.com/google-1&sa=U&ved=2ah">
+        <h3><div style="display:inline">Google Result One</div></h3>
+      </a>
+    </div>
+    <div class="ilUpNd H66NU aSRlid">Google   snippet one</div>
+  </div>
+  <div class="MjjYud">
+    <div>
+      <a data-ved="2ahUKEwjdef" href="https://example.org/google-2">
+        <h3><div style="display:inline">Google Result Two</div></h3>
+      </a>
+    </div>
+    <div class="ilUpNd H66NU aSRlid">Google snippet two</div>
+  </div>
+  <a data-ved="2ahUKEwjad" class="fl" href="/search?q=related">Related link with class, skipped</a>
+</div>
+</body></html>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "灵异小说"
+  short_description: "用于构建原创规则型恐怖民俗氛围悬念递进与安全惊悚体验。"
+  default_prompt: "Use $supernatural-fiction-writing to outline an original supernatural mystery."

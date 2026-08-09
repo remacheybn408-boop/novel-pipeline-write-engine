@@ -1,0 +1,4 @@
+interface:
+  display_name: "历史小说"
+  short_description: "用于构建尊重史实边界的原创历史叙事人物选择时代压力与情节张力。"
+  default_prompt: "Use $historical-fiction-writing to develop an original historical-fiction plot."

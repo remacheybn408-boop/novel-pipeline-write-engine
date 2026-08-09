@@ -1,0 +1,101 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proseforge"
+version = "1.5.0"
+description = "AI-powered long-form novel engineering pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.11,<3",
+    "pydantic-settings>=2.9,<3",
+    "orjson>=3.10,<4",
+    "structlog>=25.1,<26",
+    "zstandard>=0.23,<1",
+    "pyyaml>=6,<7",
+    # Narrative RAG local embedding engine (ONNX, CPU; lazily imported).
+    "fastembed>=0.8,<1",
+    # Model download path (providers/local/fetch.py) imports huggingface_hub
+    # directly; pin it explicitly instead of relying on fastembed's transitive dep.
+    "huggingface_hub>=0.30,<1",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.116,<1",
+    "uvicorn[standard]>=0.35,<1",
+    "sqlalchemy[asyncio]>=2.0.41,<3",
+    "asyncpg>=0.30,<1",
+    "aiosqlite>=0.20,<1",
+    "psycopg[binary]>=3.2,<4",
+    "alembic>=1.16,<2",
+    "pgvector>=0.4,<1",
+    "httpx>=0.28,<1",
+    "beautifulsoup4>=4.12,<5",
+    "trafilatura>=2.0,<3",
+    "pypdf>=4.0,<7",
+    "pdfplumber>=0.11,<1",
+    "python-docx>=1.1,<2",
+    "openpyxl>=3.1,<4",
+    "defusedxml>=0.7,<1",
+    "charset-normalizer>=3.3,<4",
+    "python-multipart>=0.0.20,<1",
+    "cryptography>=46.0.7,<49",
+    "passlib[argon2]>=1.7,<2",
+    "pyjwt>=2.10,<3",
+    "redis>=6,<7",
+    "celery[redis]>=5.5,<6",
+]
+worker = [
+    "celery[redis]>=5.5,<6",
+]
+dev = [
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1,<2",
+    "pytest-cov>=6,<7",
+    "respx>=0.22,<1",
+    "ruff>=0.16,<0.17",
+    "mypy>=1.16,<2",
+]
+
+[project.scripts]
+proseforge = "proseforge.cli.main:main"
+
+[project.urls]
+Repository = "https://github.com/remacheybn408-boop/ProseForge"
+
+# Explicit package discovery: keep setuptools from misdetecting layouts;
+# only the web application package ships.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["proseforge*"]
+
+[tool.ruff.lint]
+# 项目代码风格允许紧凑单行写法（if x: raise ... / class X: pass），
+# E701/E702 仅为风格规则，无正确性信号；其余规则保持默认严格。
+# BLE001（盲捕 Exception）放行：端点兜底与 best-effort 路径大量故意宽捕，
+# 逐条收窄收益低且容易漏掉未知异常类型，保持现有语义不变。
+extend-ignore = ["E701", "E702", "BLE001"]
+
+# FastAPI 惯例：Depends/Query/Path/Body/UploadFile 作为参数默认值是框架要求的
+# 写法，并非真正的可变默认值陷阱，豁免 B008。
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.UploadFile",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--strict-markers -ra"
+markers = [
+    "xfail_known: known failure tracked in AGENTS.md (use with reason=)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:google.protobuf.*",
+]

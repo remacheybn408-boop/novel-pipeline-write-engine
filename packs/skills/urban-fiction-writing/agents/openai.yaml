@@ -1,0 +1,4 @@
+interface:
+  display_name: "都市小说"
+  short_description: "用于构建原创都市小说冲突节奏人物成长与社会关系网络。"
+  default_prompt: "Use $urban-fiction-writing to plan an original urban-fiction chapter."

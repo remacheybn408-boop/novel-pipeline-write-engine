@@ -1,0 +1,4 @@
+interface:
+  display_name: "玄幻小说"
+  short_description: "用于构建原创东方奇幻世界能力体系冒险主线成长冲突与史诗格局。"
+  default_prompt: "Use $eastern-fantasy-fiction-writing to create an original eastern-fantasy story plan."
