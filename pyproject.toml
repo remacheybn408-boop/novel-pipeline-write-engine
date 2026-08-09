@@ -18,7 +18,7 @@ dependencies = [
     "fastembed>=0.8,<1",
     # Model download path (providers/local/fetch.py) imports huggingface_hub
     # directly; pin it explicitly instead of relying on fastembed's transitive dep.
-    "huggingface_hub>=0.30,<1",
+    "huggingface_hub>=0.30,<2",
 ]
 
 [project.optional-dependencies]
